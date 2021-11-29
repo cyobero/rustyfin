@@ -10,9 +10,8 @@ pub mod stocks {
         fn endpoint(&self) -> T;
     }
 
-    pub trait Builder<Output = Self> {
-        type Output;
-        fn build(self) -> Self::Output;
+    pub trait Builder<T = Self> {
+        fn build(self) -> T;
     }
 
     // Builder structs
@@ -96,8 +95,10 @@ pub mod stocks {
                 self.events = Some(event);
                 self
             }
+        }
 
-            pub fn build(self) -> YahooFinance {
+        impl Builder<YahooFinance> for YahooFinanceBuilder<'_> {
+            fn build(self) -> YahooFinance {
                 YahooFinance {
                     base_url: self.base_url.unwrap().to_owned(),
                     events: self.events.unwrap(),
@@ -126,8 +127,10 @@ pub mod stocks {
                 self.symbol = Some(symbl);
                 self
             }
+        }
 
-            pub fn build(self) -> Stock {
+        impl Builder<Stock> for StockBuilder<'_> {
+            fn build(self) -> Stock {
                 Stock {
                     symbol: self.symbol.unwrap().to_owned(),
                 }
@@ -178,8 +181,10 @@ pub mod stocks {
                 self.interval = Some(interval);
                 self
             }
+        }
 
-            pub fn build(self) -> History {
+        impl Builder<History> for HistoryBuilder {
+            fn build(self) -> History {
                 History {
                     stock: self.stock.unwrap(),
                     period1: self.period1.unwrap(),
