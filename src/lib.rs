@@ -39,14 +39,21 @@ pub mod stocks {
 
         impl<'a> Endpoint<'a, String> for YahooFinance {
             fn endpoint(&self) -> String {
-                format!("{}/{}/history?", &self.base_url, &self.events.stock.symbol)
+                format!(
+                    "{}/{}/history?period1={}&period2={}&interval={}",
+                    &self.base_url,
+                    &self.events.stock.symbol,
+                    &self.events.period1,
+                    &self.events.period2,
+                    &self.events.interval,
+                )
             }
         }
 
         impl<'y> YahooFinance {
             pub fn new() -> Self {
                 YahooFinance {
-                    base_url: String::from("https://finance.yahoo.com/quote/"),
+                    base_url: String::from("https://finance.yahoo.com/quote"),
                     events: History::new(),
                 }
             }
@@ -59,7 +66,7 @@ pub mod stocks {
         impl<'yb> YahooFinanceBuilder<'yb> {
             pub fn new() -> Self {
                 YahooFinanceBuilder {
-                    base_url: Some("https://finance.yahoo.com/quote/"),
+                    base_url: Some("https://finance.yahoo.com/quote"),
                     events: Some(History::new()),
                 }
             }
