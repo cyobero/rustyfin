@@ -1,18 +1,13 @@
 use reqwest::{self, Client};
-use serde::Deserialize;
 
 pub mod calc;
 
 pub mod stocks {
+    use serde::Deserialize;
 
-    pub trait Endpoint<T> {
+    /// Take a struct `T` and return the final endpoint of the URL request
+    pub trait Endpoint<'e, T: Deserialize<'e>> {
         fn endpoint(&self) -> T;
-    }
-
-    impl Endpoint<String> for YahooFinance {
-        fn endpoint(&self) -> String {
-            format!("{}/{}/history?", &self.base_url, &self.events.stock.symbol)
-        }
     }
 
     // Builder structs
@@ -59,6 +54,12 @@ pub mod stocks {
 
     mod impls {
         use super::*;
+
+        impl<'a> Endpoint<'a, String> for YahooFinance {
+            fn endpoint(&self) -> String {
+                format!("{}/{}/history?", &self.base_url, &self.events.stock.symbol)
+            }
+        }
 
         impl<'y> YahooFinance {
             pub fn new() -> Self {
