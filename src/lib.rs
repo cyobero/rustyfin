@@ -1,11 +1,103 @@
 use reqwest::{self, Client};
+use serde::Deserialize;
 
 pub mod calc;
 
 pub mod stocks {
 
+    pub trait Endpoint<T> {
+        fn endpoint(&self) -> T;
+    }
+
+    impl Endpoint<String> for YahooFinance {
+        fn endpoint(&self) -> String {
+            format!("{}/{}/history?", &self.base_url, &self.events.stock.symbol)
+        }
+    }
+
+    // Builder structs
+    #[derive(Clone, Debug)]
+    pub struct StockBuilder<'s> {
+        pub symbol: Option<&'s str>,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct HistoryBuilder<S = Stock> {
+        pub stock: Option<S>,
+        pub period1: Option<usize>,
+        pub period2: Option<usize>,
+        pub interval: Option<usize>,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct YahooFinanceBuilder<'y, E = History> {
+        pub base_url: Option<&'y str>,
+        pub events: Option<E>,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct Stock<T = String> {
+        symbol: T,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct History<P = usize, U = usize, S = Stock>
+    where
+        U: Sized + PartialEq,
+    {
+        stock: S,
+        period1: P,
+        period2: P,
+        interval: U,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct YahooFinance<H = History> {
+        base_url: String,
+        events: H,
+    }
+
     mod impls {
         use super::*;
+
+        impl<'y> YahooFinance {
+            pub fn new() -> Self {
+                YahooFinance {
+                    base_url: String::from("https://finance.yahoo.com/quote/"),
+                    events: History::new(),
+                }
+            }
+
+            pub fn builder() -> YahooFinanceBuilder<'y> {
+                YahooFinanceBuilder::new()
+            }
+        }
+
+        impl<'yb> YahooFinanceBuilder<'yb> {
+            pub fn new() -> Self {
+                YahooFinanceBuilder {
+                    base_url: Some("https://finance.yahoo.com/quote/"),
+                    events: Some(History::new()),
+                }
+            }
+
+            pub fn base_url(mut self, url: &'yb str) -> Self {
+                self.base_url = Some(url);
+                self
+            }
+
+            pub fn event(mut self, event: History) -> Self {
+                self.events = Some(event);
+                self
+            }
+
+            pub fn build(self) -> YahooFinance {
+                YahooFinance {
+                    base_url: self.base_url.unwrap().to_owned(),
+                    events: self.events.unwrap(),
+                }
+            }
+        }
 
         impl<'s> Stock {
             pub fn new() -> Self {
@@ -90,47 +182,5 @@ pub mod stocks {
                 }
             }
         }
-    }
-
-    // Builder structs
-    #[derive(Clone, Debug)]
-    pub struct StockBuilder<'s> {
-        pub symbol: Option<&'s str>,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct HistoryBuilder<S = Stock> {
-        pub stock: Option<S>,
-        pub period1: Option<usize>,
-        pub period2: Option<usize>,
-        pub interval: Option<usize>,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct YahooFinanceBuilder<'y, E = History> {
-        pub base_url: &'y str,
-        pub events: E,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct Stock<T = String> {
-        symbol: T,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct History<P = usize, U = usize, S = Stock>
-    where
-        U: Sized + PartialEq,
-    {
-        stock: S,
-        period1: P,
-        period2: P,
-        interval: U,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct YahooFinance<'y, H = History> {
-        base_url: &'y str,
-        events: H,
     }
 }
