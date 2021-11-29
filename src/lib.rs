@@ -10,6 +10,11 @@ pub mod stocks {
         fn endpoint(&self) -> T;
     }
 
+    pub trait Builder<Output = Self> {
+        type Output;
+        fn build(self) -> Self::Output;
+    }
+
     // Builder structs
     #[derive(Clone, Debug)]
     pub struct StockBuilder<'s> {
