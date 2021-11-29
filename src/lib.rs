@@ -1,5 +1,6 @@
 use reqwest::{self, Client};
 
+pub mod builders;
 pub mod calc;
 
 pub mod stocks {
@@ -8,30 +9,6 @@ pub mod stocks {
     /// Take a struct `T` and return the final endpoint of the URL request
     pub trait Endpoint<'e, T: Deserialize<'e>> {
         fn endpoint(&self) -> T;
-    }
-
-    pub trait Builder<T = Self> {
-        fn build(self) -> T;
-    }
-
-    // Builder structs
-    #[derive(Clone, Debug)]
-    pub struct StockBuilder<'s> {
-        pub symbol: Option<&'s str>,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct HistoryBuilder<S = Stock> {
-        pub stock: Option<S>,
-        pub period1: Option<usize>,
-        pub period2: Option<usize>,
-        pub interval: Option<usize>,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct YahooFinanceBuilder<'y, E = History> {
-        pub base_url: Option<&'y str>,
-        pub events: Option<E>,
     }
 
     #[derive(Clone, Debug)]
@@ -58,6 +35,7 @@ pub mod stocks {
 
     mod impls {
         use super::*;
+        use crate::builders::*;
 
         impl<'a> Endpoint<'a, String> for YahooFinance {
             fn endpoint(&self) -> String {
