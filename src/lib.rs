@@ -1,7 +1,7 @@
 use reqwest::{self, Client};
 
 pub mod builders;
-pub mod calc;
+pub mod ma;
 
 pub mod stocks {
     use serde::Deserialize;
@@ -96,6 +96,11 @@ pub mod stocks {
                 Stock {
                     symbol: String::new(),
                 }
+            }
+
+            pub fn symbol(mut self, symbol: &'s str) -> Self {
+                self.symbol = symbol.to_owned();
+                self
             }
 
             pub fn builder() -> StockBuilder<'s> {
