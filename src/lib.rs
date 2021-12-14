@@ -1,187 +1,70 @@
-use reqwest::{self, Client};
+pub mod ma {
+    pub trait MovingAverage<Output = Vec<f64>> {
+        /// Calculate the n-period simple moving average.
+        /// Example:
+        ///     let nums = vec![5., 7., 6., 5., 5.5, 4.5];
+        ///     let sma = nums.sma(2);
+        ///     assert_eq!(sma, vec![6.0, 7.5, 7.0, 5.5, 5.25]);
+        fn sma(&self, periods: usize) -> Output;
 
-pub mod builders;
-pub mod ma;
-
-pub mod stocks {
-    use serde::Deserialize;
-
-    /// Take a struct `T` and return the final endpoint of the URL request
-    pub trait Endpoint<'e, T: Deserialize<'e>> {
-        fn endpoint(&self) -> T;
+        /// Calculate the n-period exponentially-weighted moving average.
+        /// Example:
+        ///     let nums = vec![2., 4., 6., 8., 12.];
+        ///     let ema = nums.ema(2);
+        ///     assert_eq!(ema, vec![3.0, 6.333333333333333, 10.11111111111111]);
+        fn ema(&self, periods: usize) -> Output;
     }
 
-    #[derive(Clone, Debug)]
-    pub struct Stock<T = String> {
-        symbol: T,
+    impl<T: Copy + Into<f64>> MovingAverage for [T] {
+        fn sma(&self, periods: usize) -> Vec<f64> {
+            let mut sum = 0f64;
+            let mut ma = Vec::<f64>::with_capacity(self.len() - periods);
+            for i in 0..self.len() {
+                if i >= periods {
+                    if i >= periods {
+                        ma.push(sum / periods as f64);
+                        sum -= self[i - periods].into();
+                    }
+                }
+                sum += self[i].into();
+            }
+            ma
+        }
+
+        fn ema(&self, periods: usize) -> Vec<f64> {
+            let mut sum = 0f64;
+            let mut ma = Vec::<f64>::with_capacity(self.len() - periods);
+            let multiplier = 2. / (periods + 1) as f64;
+            for i in 0..self.len() {
+                if i == periods {
+                    ma.push(sum / periods as f64);
+                    sum -= self[i - periods].into();
+                } else if i > periods {
+                    let val = (1. - multiplier) * ma.last().unwrap() + multiplier * &self[i].into();
+                    ma.push(val);
+                }
+                sum += self[i].into();
+            }
+            ma
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ma::MovingAverage;
+
+    #[test]
+    fn sma_calculated_correctly() {
+        let nums = vec![5., 7., 8., 6., 5., 5.5, 4.5];
+        let sma = nums.sma(2);
+        assert_eq!(sma, vec![6.0, 7.5, 7.0, 5.5, 5.25]);
     }
 
-    #[derive(Clone, Debug)]
-    pub struct History<P = usize, U = usize, S = Stock>
-    where
-        U: Sized + PartialEq,
-    {
-        stock: S,
-        period1: P,
-        period2: P,
-        interval: U,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct YahooFinance<H = History> {
-        base_url: String,
-        events: H,
-    }
-
-    mod impls {
-        use super::*;
-        use crate::builders::*;
-
-        impl<'a> Endpoint<'a, String> for YahooFinance {
-            fn endpoint(&self) -> String {
-                format!(
-                    "{}/{}/history?period1={}&period2={}&interval={}",
-                    &self.base_url,
-                    &self.events.stock.symbol,
-                    &self.events.period1,
-                    &self.events.period2,
-                    &self.events.interval,
-                )
-            }
-        }
-
-        impl<'y> YahooFinance {
-            pub fn new() -> Self {
-                YahooFinance {
-                    base_url: String::from("https://finance.yahoo.com/quote"),
-                    events: History::new(),
-                }
-            }
-
-            pub fn builder() -> YahooFinanceBuilder<'y> {
-                YahooFinanceBuilder::new()
-            }
-        }
-
-        impl<'yb> YahooFinanceBuilder<'yb> {
-            pub fn new() -> Self {
-                YahooFinanceBuilder {
-                    base_url: Some("https://finance.yahoo.com/quote"),
-                    events: Some(History::new()),
-                }
-            }
-
-            pub fn base_url(mut self, url: &'yb str) -> Self {
-                self.base_url = Some(url);
-                self
-            }
-
-            pub fn event(mut self, event: History) -> Self {
-                self.events = Some(event);
-                self
-            }
-        }
-
-        impl Builder<YahooFinance> for YahooFinanceBuilder<'_> {
-            fn build(self) -> YahooFinance {
-                YahooFinance {
-                    base_url: self.base_url.unwrap().to_owned(),
-                    events: self.events.unwrap(),
-                }
-            }
-        }
-
-        impl<'s> Stock {
-            pub fn new() -> Self {
-                Stock {
-                    symbol: String::new(),
-                }
-            }
-
-            pub fn symbol(mut self, symbol: &'s str) -> Self {
-                self.symbol = symbol.to_owned();
-                self
-            }
-
-            pub fn builder() -> StockBuilder<'s> {
-                StockBuilder::new()
-            }
-        }
-
-        impl<'sb> StockBuilder<'sb> {
-            pub fn new() -> Self {
-                StockBuilder { symbol: None }
-            }
-
-            pub fn symbol(mut self, symbl: &'sb str) -> Self {
-                self.symbol = Some(symbl);
-                self
-            }
-        }
-
-        impl Builder<Stock> for StockBuilder<'_> {
-            fn build(self) -> Stock {
-                Stock {
-                    symbol: self.symbol.unwrap().to_owned(),
-                }
-            }
-        }
-
-        impl History {
-            pub fn new() -> History {
-                History {
-                    stock: Stock::new(),
-                    period1: 0,
-                    period2: 0,
-                    interval: 0,
-                }
-            }
-
-            pub fn builder() -> HistoryBuilder {
-                HistoryBuilder::new()
-            }
-        }
-
-        impl<'hb> HistoryBuilder {
-            pub fn new() -> Self {
-                HistoryBuilder {
-                    stock: None,
-                    period1: None,
-                    period2: None,
-                    interval: None,
-                }
-            }
-
-            pub fn stock(mut self, stock: Stock) -> Self {
-                self.stock = Some(stock);
-                self
-            }
-
-            pub fn period1(mut self, period: usize) -> Self {
-                self.period1 = Some(period);
-                self
-            }
-
-            pub fn period2(mut self, period: usize) -> Self {
-                self.period2 = Some(period);
-                self
-            }
-
-            pub fn interval(mut self, interval: usize) -> Self {
-                self.interval = Some(interval);
-                self
-            }
-        }
-
-        impl Builder<History> for HistoryBuilder {
-            fn build(self) -> History {
-                History {
-                    stock: self.stock.unwrap(),
-                    period1: self.period1.unwrap(),
-                    period2: self.period2.unwrap(),
-                    interval: self.interval.unwrap(),
-                }
-            }
-        }
+    #[test]
+    fn ema_calculated_correctly() {
+        let nums = vec![2., 4., 6., 8., 12.];
+        let ema = nums.ema(2);
+        assert_eq!(ema, vec![3.0, 6.333333333333333, 10.11111111111111]);
     }
 }

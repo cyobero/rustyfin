@@ -1,14 +1,16 @@
-use finance::builders::Builder;
 use finance::ma::MovingAverage;
-use finance::stocks::*;
 
 fn main() {
-    let nums = vec![5., 10., 3., 9., 8., 7., 2.5, 8.5, 1.9, 2.2];
-    let n = 2usize;
-    let sma = nums.sma(n);
-    let ema = nums.ema(n);
+    let nums_f = vec![5., 7., 8., 6., 5., 5.5, 4.5];
+    let nums_i = vec![10, 3, 19, 8, 7, 14, 21, 20, 29, 19, 8, 10, 10, 11, 12];
+    println!("nums_f: {:?}", nums_f);
+    println!("2-day SMA for nums_f: {:?}", nums_f.sma(2));
+    println!(
+        "2-day EMA for nums_f: {:?}",
+        vec![2., 4., 6., 8., 12.].ema(2)
+    );
 
-    println!("nums: {:?}", nums);
-    println!("simple {}-period moving average: {:?}", n, sma);
-    println!("exponential {}-period moving average: {:?}", n, ema);
+    println!("nums_i: {:?}", nums_i);
+    println!("5-day SMA for nums_i: {:?}", nums_i.sma(5));
+    println!("5-day EMA for nums_i: {:?}", nums_i.ema(5));
 }
