@@ -1,4 +1,4 @@
-use finance::ma::MovingAverage;
+use finance::{MovingAverage, Volatility};
 
 fn main() {
     let nums_f = vec![5., 7., 8., 6., 5., 5.5, 4.5];
@@ -12,5 +12,8 @@ fn main() {
 
     println!("nums_i: {:?}", nums_i);
     println!("5-day SMA for nums_i: {:?}", nums_i.sma(5));
-    println!("5-day EMA for nums_i: {:?}", nums_i.ema(5));
+    println!("5-day EMA for nums_i: {:?}\n", nums_i.ema(5));
+
+    println!("range of nums_i: {:?}", nums_i.range_volatility());
+    println!("range of nums_f: {:?}", nums_f.range_volatility());
 }
