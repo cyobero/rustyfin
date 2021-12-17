@@ -28,7 +28,7 @@ pub trait Volatility<T: Copy + PartialOrd> {
 
 pub trait CentralMoment<Output = f64>
 where
-    Output: Copy,
+    Output: Copy + Into<f64> + From<f64>,
 {
     /// Calculate the mean of a series.
     /// Example:
@@ -43,6 +43,11 @@ where
     ///     let var = nums.var();
     ///     assert_eq!(var, 2.242);
     fn var(&self) -> Output;
+
+    fn std(&self) -> Output {
+        let var: f64 = self.var().into();
+        Output::from(var.sqrt())
+    }
 }
 
 impl<T: Copy + Into<f64>> CentralMoment for [T]
@@ -180,5 +185,19 @@ mod tests {
         let nums = vec![5, 5, 10, 3];
         let var = nums.var();
         assert_eq!(var, 6.6875);
+    }
+
+    #[test]
+    fn std_calculated_for_i32s() {
+        let nums = vec![5, 5, 10, 3];
+        let var = nums.var();
+        assert_eq!(nums.std(), var.sqrt());
+    }
+
+    #[test]
+    fn std_calculated_for_f64s() {
+        let nums = vec![5., 5., 10., 3.];
+        let var = nums.var();
+        assert_eq!(nums.std(), var.sqrt());
     }
 }
