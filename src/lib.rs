@@ -1,4 +1,5 @@
 use num::Num;
+use std::ops::{AddAssign, Sub};
 
 pub trait MovingAverage<Output = Vec<f64>> {
     /// Calculate the n-period simple moving average.
@@ -35,6 +36,13 @@ where
     ///     let avg = nums.mean();
     ///     assert_eq!(avg, 4.);
     fn mean(&self) -> Output;
+
+    /// Calculate the population variance of a series.
+    /// Example:
+    ///     let nums = vec![10.5, 2.1, 1.9, 10.3, 9.8];
+    ///     let var = nums.var();
+    ///     assert_eq!(var, 2.242);
+    fn var(&self) -> Output;
 }
 
 impl<T: Copy + Into<f64>> CentralMoment for [T]
@@ -47,6 +55,17 @@ where
             sum += self[i].into();
         }
         sum / self.len() as f64
+    }
+
+    fn var(&self) -> f64 {
+        let mean: f64 = self.mean();
+        let mut ss = 0f64;
+        for i in 0..self.len() {
+            let sq_diff = (self[i].into() - mean).powf(2.);
+            ss += sq_diff;
+        }
+
+        ss / (self.len() as f64)
     }
 }
 
@@ -147,5 +166,19 @@ mod tests {
         let nums = vec![5., 4.5, 3.5, 3.];
         let avg = nums.mean();
         assert_eq!(avg, 4.);
+    }
+
+    #[test]
+    fn var_calculated_for_f64s() {
+        let nums = vec![5., 5., 10., 3.];
+        let var = nums.var();
+        assert_eq!(var, 6.6875);
+    }
+
+    #[test]
+    fn var_calculated_for_i32s() {
+        let nums = vec![5, 5, 10, 3];
+        let var = nums.var();
+        assert_eq!(var, 6.6875);
     }
 }
