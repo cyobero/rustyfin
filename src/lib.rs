@@ -25,6 +25,31 @@ pub trait Volatility<T: Copy + PartialOrd> {
     fn range_volatility(&self) -> T;
 }
 
+pub trait CentralMoment<Output = f64>
+where
+    Output: Copy,
+{
+    /// Calculate the mean of a series.
+    /// Example:
+    ///     let nums = vec![5, 4, 3, 4];
+    ///     let avg = nums.mean();
+    ///     assert_eq!(avg, 4.);
+    fn mean(&self) -> Output;
+}
+
+impl<T: Copy + Into<f64>> CentralMoment for [T]
+where
+    T: Copy + Into<f64>,
+{
+    fn mean(&self) -> f64 {
+        let mut sum = 0f64;
+        for i in 0..self.len() {
+            sum += self[i].into();
+        }
+        sum / self.len() as f64
+    }
+}
+
 impl<T: Copy + Into<f64>> MovingAverage for [T] {
     fn sma(&self, periods: usize) -> Vec<f64> {
         let mut sum = 0f64;
@@ -84,8 +109,8 @@ mod tests {
 
     #[test]
     fn sma_calculated_correctly() {
-        let nums = vec![5., 7., 8., 6., 5., 5.5, 4.5];
-        let sma = nums.sma(2);
+        let numsf = vec![5., 7., 8., 6., 5., 5.5, 4.5];
+        let sma = numsf.sma(2);
         assert_eq!(sma, vec![6.0, 7.5, 7.0, 5.5, 5.25]);
     }
 
@@ -105,8 +130,22 @@ mod tests {
 
     #[test]
     fn range_volatility_returns_zero_for_one_element_vec() {
-        let nums = vec![5.];
+        let nums = vec![5];
         let range = nums.range_volatility();
-        assert_eq!(range, 0f64);
+        assert_eq!(range, 0);
+    }
+
+    #[test]
+    fn mean_calculated_for_integers() {
+        let nums = vec![5, 4, 3, 4];
+        let avg = nums.mean();
+        assert_eq!(avg, 4.);
+    }
+
+    #[test]
+    fn mean_calculated_for_f32s() {
+        let nums = vec![5., 4.5, 3.5, 3.];
+        let avg = nums.mean();
+        assert_eq!(avg, 4.);
     }
 }
