@@ -44,6 +44,11 @@ where
     ///     assert_eq!(var, 2.242);
     fn var(&self) -> Output;
 
+    /// Calculate the population standard deviation of a series.
+    /// Example:
+    ///     let nums = vec![5., 5., 10., 3.];
+    ///     let var = nums.var();
+    ///     assert_eq!(nums.std(), var.sqrt());
     fn std(&self) -> Output {
         let var: f64 = self.var().into();
         Output::from(var.sqrt())
