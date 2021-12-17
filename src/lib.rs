@@ -60,8 +60,8 @@ where
     fn var(&self) -> f64 {
         let mean: f64 = self.mean();
         let mut ss = 0f64;
-        for i in 0..self.len() {
-            let sq_diff = (self[i].into() - mean).powf(2.);
+        for n in self {
+            let sq_diff = ((*n).into() - mean).powf(2.);
             ss += sq_diff;
         }
 
