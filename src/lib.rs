@@ -1,5 +1,8 @@
+use self::errors::Error;
 use num::Num;
 use std::ops::{AddAssign, Sub};
+
+pub mod errors;
 
 pub trait MovingAverage<Output = Vec<f64>> {
     /// Calculate the n-period simple moving average.
@@ -52,6 +55,30 @@ where
     fn std(&self) -> Output {
         let var: f64 = self.var().into();
         Output::from(var.sqrt())
+    }
+}
+
+pub trait Covariance<Output = f64, E = Error> {
+    /// Calculate the covariance between of series.
+    fn covar(&self, cmp: &Self) -> Result<Output, E>;
+}
+
+impl<T: Copy + Into<f64>> Covariance for [T]
+where
+    Self: CentralMoment,
+{
+    fn covar(&self, cmp: &Self) -> Result<f64, Error> {
+        match self.len() == cmp.len() {
+            false => Err(Error::LengthMismatch),
+            true => {
+                let mut sum = 0f64;
+                let (mean1, mean2) = (self.mean(), cmp.mean());
+                for i in 0..self.len() {
+                    sum += (self[i].into() - mean1) * (cmp[i].into() - mean2);
+                }
+                Ok(sum / (self.len() as f64 - 1.))
+            }
+        }
     }
 }
 
@@ -204,5 +231,21 @@ mod tests {
         let nums = vec![5., 5., 10., 3.];
         let var = nums.var();
         assert_eq!(nums.std(), var.sqrt());
+    }
+
+    #[test]
+    fn covar_calculated_for_f64s() {
+        let x1 = vec![10., 3., 19., 8., 7.];
+        let x2 = vec![13., 4., 21., 8., 3.];
+        let covar = x1.covar(&x2).unwrap();
+        assert_eq!(covar, 41.35);
+    }
+
+    #[test]
+    fn diff_vec_lens_produces_error_for_covar() {
+        let x1 = vec![10., 3., 19., 8., 7.];
+        let x2 = vec![13., 4., 21., 8.];
+        let covar = x1.covar(&x2);
+        assert!(covar.is_err());
     }
 }
