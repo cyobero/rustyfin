@@ -60,6 +60,11 @@ where
 
 pub trait Covariance<Output = f64, E = Error> {
     /// Calculate the covariance between of series.
+    /// Example:
+    ///     let x1 = vec![10., 3., 19., 8., 7.];
+    ///     let x2 = vec![13., 4., 21., 8., 3.];
+    ///     let covar = x1.covar(&x2).unwrap();
+    ///     assert_eq!(covar, 41.35);
     fn covar(&self, cmp: &Self) -> Result<Output, E>;
 }
 
